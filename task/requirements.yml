@@ -1,0 +1,14 @@
+# This file conntains all requirements must match before running this playbook
+
+
+tested_on:
+  - os_name: debian
+
+
+
+status:
+  connectivity:    
+    localhost:       # make sure localhost is able to reach alpine repository when docker build
+    container:       # make sure test container can reach alpine repository
+
+  

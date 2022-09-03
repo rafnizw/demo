@@ -1,0 +1,98 @@
+---
+- name: "BUILD: IN"
+  ansible.builtin.set_fact:
+    task_name: "BUILD:"
+
+
+## Build container
+#==========================================================================================
+- name: "{{task_name}} User-Input <version_build>"
+  pause:
+    prompt: |
+
+             Summary:
+             ====================================================================================
+             Last check:                   | {{db.status.last_check}} 
+
+             Current Alpine Version:       | {{db.version.alpine}}  
+             NEW Alpine Version:           | {{version_alpine}}  Build: {{version_alpine_build}}
+             Update status:                | {{'OS update is required!' if db.version.alpine < version_alpine else 'OS is updated'}}
+
+             Current Unbound version:      | {{db.version.unbound}}
+             NEW Unbound version:          | {{version_unbound}}
+             Update status:                | {{'NSD update is required!' if db.version.unbound < version_unbound else 'NSD is updated'}}
+
+             Image Build version:          | {{db.version.build}}
+
+             Next Step:
+             ====================================================================================
+             ENTER New build version to continue (current is: {{db.version.build}})
+  register: result
+
+
+- name: "{{task_name}} SET: version_build" 
+  set_fact:
+    version_build: "{{ result.user_input }}"
+  when: result is not skipped
+  failed_when: db.version.build > result.user_input
+
+
+- name: "{{task_name}} Prepare MAIN configuration file unbound.conf from template {{db.tpl.unbound.main}}"
+  ansible.builtin.template:
+    src: "{{db.tpl.unbound.main}}"
+    dest: "{{db.dir.tmp}}/unbound.conf"
+
+
+- name: "{{task_name}} Prepare DEFAULT server configuration file {{db.tpl.unbound.default}}"
+  ansible.builtin.template:
+    src: "{{db.tpl.unbound.default}}"
+    dest: "{{db.dir.tmp}}/default.cfg"
+
+
+- name: "{{task_name}} Delete config_type from generated file {{db.dir.tmp}}/default.cfg"
+  ansible.builtin.lineinfile:
+    path: "{{db.dir.tmp}}/default.cfg"
+    # String to Search
+    regexp: 'config_type:'
+    # State is set to Absent to remove if the Searching Line is found
+    state: absent
+    backup: no
+
+
+- name: "{{task_name}} Prepare forwward zone example.com {{db.tpl.unbound.example}}"
+  ansible.builtin.template:
+    src: "{{db.tpl.unbound.example}}"
+    dest: "{{db.dir.tmp}}/example.cfg"
+
+
+- name: "{{task_name}} Prepare dockerfile from template {{db.tpl.dockerfile}}"
+  ansible.builtin.template:
+    src: "{{db.tpl.dockerfile}}"
+    dest: "{{db.dir.tmp}}/dockerfile"
+
+
+- name: "{{task_name}} Build new image based on Image: {{db.image.source}}.{{version_alpine_build}} Unbound version: {{version_unbound}} build: {{version_build}} "
+  ansible.builtin.shell: 
+    cmd: "{{db.runtime}} build . -f {{db.dir.tmp}}/dockerfile -t {{db.docker_tag}}:{{version_build}}"
+    chdir: "{{db.dir.tmp}}"
+
+
+- name: "{{task_name}} Tag image {{db.docker_tag}}:{{version_build}} as {{db.docker_tag}}:latest"
+  ansible.builtin.shell: 
+    cmd: "{{db.runtime}} tag {{db.docker_tag}}:{{version_build}} {{db.docker_tag}}:latest"
+
+
+- name: "{{task_name}} Export new build {{db.docker_tag}}:{{version_build}} to unbound_demo_{{version_build}}.tar.gz"
+  ansible.builtin.shell:
+    cmd: "{{db.runtime}} save {db.{docker_tag}}:{{version_build}} | gzip > {{db.dir.build}}/unbound_demo_{{version_build}}.tar.gz"
+
+
+- name: "{{task_name}} Docker run {{db.ct.test}}"
+  ansible.builtin.shell: 
+    cmd: "{{db.runtime}} run --tty --rm {{db.docker_tag}}:latest env | grep ENV_VERSION_BUILD | cut -d '=' -f 2"
+  register: result
+
+- debug:
+    msg: "{{'Image was updated sucesfully' if result.stdout == version_build else 'Image FAILED to update'}}"
+
+

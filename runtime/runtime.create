@@ -1,0 +1,9 @@
+RUNTIME=podman
+
+
+$RUNTIME run -d --name ns1 \
+         -- network service \
+         -p 53:53/tcp -p 53:53/udp \
+         -v /git/project/dockerfile/unbound/cfg/unbound:/etc/unbound
+         --restart=on-failure:10 \
+         docker.io/rafnizp/lab:dns

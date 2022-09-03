@@ -1,0 +1,53 @@
+---
+# All pre-task before running main scripts
+
+- name: "PRE-TASK: IN"
+  ansible.builtin.set_fact:
+    task_name: "PRE-TASK:"
+
+
+##
+# Containers related 
+- name: "{{task_name}} Stop container {{db.ct.test}}"
+  ansible.builtin.raw: "{{db.runtime}} stop {{db.ct.test}}"
+  ignore_errors: yes
+
+
+- name: "{{task_name}} Delete container {{db.ct.test}}"
+  ansible.builtin.raw: "{{db.runtime}} rm -f {{db.ct.test}}"
+  ignore_errors: yes
+
+
+- name: "{{task_name}} Delete image {{db.ct.test}}"
+  ansible.builtin.raw: "{{db.runtime}} image rm -f {{db.docker_tag}}:latest && {{db.runtime}} image rm -f {{db.docker_tag}}:{{version_build}}"
+  ignore_errors: yes
+
+
+##
+# Directory related tasks
+- name: "{{task_name}} Delete directory if exist {{db.dir.tmp}}"
+  ansible.builtin.file:
+    state: absent
+    path: "{{db.dir.tmp}}"
+
+
+- name: "{{task_name}} Create a directory if it does not exist {{db.dir.tmp}}"
+  ansible.builtin.file:
+    path: "{{db.dir.tmp}}"
+    state: directory
+
+- name: "{{task_name}} Create a directory if it does not exist {{db.dir.tmp}}"
+  ansible.builtin.file:
+    path: "{{db.dir.build}}"
+    state: directory
+
+
+##
+# File related tasks
+#- name: "{{task_name}} Copy default runtime_entrypoint {{db.file.runtime_entrypoint}} to {{db.dir.tmp}}/"
+#  ansible.builtin.copy:
+#    src: "{{db.file.runtime_entrypoint}}"
+#    dest: "{{db.dir.tmp}}/"
+#    mode: u=rwxr,g=xr,o=x
+
+

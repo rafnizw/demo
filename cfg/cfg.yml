@@ -1,0 +1,115 @@
+---
+# This is yml configuration file used to build unbound docker image
+# To use this configuration file use playbook.yml
+
+# All yml files:
+yml_check: ./task/check.yml
+yml_build: ./task/build.yml
+yml_update: ./task/update.yml
+yml_pre_task: ./task/pre_task.yml
+
+# All Templates
+tpl:
+  dockerfile: ./template/dockerfile.j2
+  unbound:
+    main: ./template/unbound.conf.j2
+    default: ./template/default.cfg.j2
+    example: ./template/example.com.cfg.j2
+
+# All directories:
+dir:
+  tmp: ../tmp
+  build: ../build
+
+
+# Default variables:
+runtime: podman
+ct:
+  test: unbound.test
+
+
+# Build configuration
+docker_tag: unbound/demo
+version:
+  alpine: 3.15.0
+  unbound: 1.14.1
+  build: 0.0.0
+image:
+  source: rafnizp/lab:alpine
+#  source: alpine:3.14
+status:
+  last_check: 2022-05-08<:>20:30:22
+
+
+# Set default option when building image
+set:
+  config:
+    type: default     # this must match config_type from loop of db.unbound.config 
+
+
+
+# Unbound Configuration 
+unbound:
+  config:
+    - config_type: default
+      # test
+      directory: /etc/unbound
+      logfile: /var/log/unbound.log
+      verbosity: 1
+      log-queries: "yes"
+      username: unbound
+      interface: 0.0.0.0
+      do-daemonize: "no"
+      access-control: 0.0.0.0/0 allow
+      do-ip4: "yes"
+      do-ip6: "no"
+      do-udp: "yes"
+      do-tcp: "no"
+      hide-identity: "yes"
+      hide-version: "yes"
+      harden-glue: "yes"
+      harden-dnssec-stripped: "yes"
+      use-caps-for-id: "yes"
+      cache-min-ttl: 3600
+      cache-max-ttl: 86400
+      prefetch: "yes"
+      num-threads: 4
+      msg-cache-slabs: 8
+      rrset-cache-slabs: 8
+      infra-cache-slabs: 8
+      key-cache-slabs: 8
+      rrset-cache-size: 256m
+      msg-cache-size: 128m
+      so-rcvbuf: 1m
+      unwanted-reply-threshold: 10000
+      do-not-query-localhost: "no"
+      val-clean-additional: "yes"
+    - config_type: L1
+
+
+
+
+# OLD Configuration
+
+#unbound_config_type: default
+#image_name: alpine
+#minirootfs_version: 3.15.0
+#unbound_version: 1.13.2
+#url_last_stable_alpine: https://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/
+#url_last_stable_unbound: https://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/
+#docker_tag: rafnizp/lab:alpine.unbound.latest
+#docker_build_version: "ToDo: add next number from ToDo: add next number from ToDo: add next number from ToDo: add next number from ToDo: add next number from ToDo: add next number from ToDo: add next number from ToDo: add next number from 1.0"
+#dir_minirootfs: ./minirootfs
+#dir_generated: ./generated
+#yml_cfg: ./cfg.yml
+#template_dockerfile: ./template/dockerfile.j2
+#template_unbound: ./template/unbound.conf.j2
+
+
+
+
+
+
+
+  
+

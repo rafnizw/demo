@@ -1,0 +1,52 @@
+---
+- name: "CHECK: IN"
+  ansible.builtin.set_fact:
+    task_name: "CHECK:"
+
+- name: "{{task_name}}  Run test container {{db.ct.test}} based on image {{db.image.source}}.latest"
+  ansible.builtin.raw: "{{db.runtime}} run -dit --rm --name {{db.ct.test}} {{db.image.source}}.latest"
+
+
+- name: "{{task_name}} Verify Alpine version"
+  ansible.builtin.raw: "{{db.runtime}} exec --tty {{db.ct.test}} env | grep ENV_VERSION_ALPINE | cut -d '=' -f 2"
+  register: result
+
+
+- name: "{{task_name}} SET: <version_alpine>" 
+  ansible.builtin.set_fact:
+    version_alpine: "{{result.stdout | regex_replace('(\\r\\n)','') }}"
+
+
+- name: "{{task_name}} Verify Alpine build version"
+  ansible.builtin.raw: "{{db.runtime}} exec --tty {{db.ct.test}} env | grep ENV_VERSION_BUILD | cut -d '=' -f 2"
+  register: result
+
+- name: "{{task_name}} SET: <version_alpine_build>" 
+  ansible.builtin.set_fact:
+    version_alpine_build: "{{result.stdout | regex_replace('(\\r\\n)','') }}"
+
+
+- name: "{{task_name}} Install Unbound"
+  ansible.builtin.raw: "{{db.runtime}} exec -i {{db.ct.test}} apk add unbound"
+
+
+- name: "{{task_name}} Verify Unbound version"
+  ansible.builtin.raw: "{{db.runtime}} exec --tty {{db.ct.test}} unbound -h | grep  Version | awk '{print $NF}'"
+  register: result
+
+
+- name: "{{task_name}} SET: <version_unbound>" 
+  ansible.builtin.set_fact:
+    version_unbound: "{{result.stdout | regex_replace('(\\r\\n)','') }}"
+    status_last_check: "{{ansible_date_time.date}}<:>{{ansible_date_time.time}}"
+
+
+- name: "{{task_name}} {{db.runtime}} STOP container {{db.ct.test}}"
+  ansible.builtin.raw: "{{db.runtime}} stop {{db.ct.test}}"
+
+
+- debug:
+    msg:
+      - "version_alpine          | {{version_alpine}}"
+      - "version_alpine_build    | {{version_alpine_build}}"
+      - "version_unbound         | {{version_unbound}}"
